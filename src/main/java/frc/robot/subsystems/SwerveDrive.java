@@ -4,10 +4,17 @@
 
 package frc.robot.subsystems;
 
+import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.sensors.PigeonIMU;
+import com.ctre.phoenix6.hardware.TalonFX;
+import com.ctre.phoenix6.swerve.SwerveModule;
+import com.studica.frc.AHRS;
+import com.studica.frc.AHRS.NavXComType;
+import com.studica.frc.AHRS.NavXUpdateRate;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.Kinematics;
@@ -22,11 +29,16 @@ public class SwerveDrive extends SubsystemBase {
 
   SwerveDriveKinematics kinematics;
   SwerveDriveOdometry odometry;
-  PigeonIMU gyro;
+  AHRS gyro;
+  SwerveModule[] swerveModule;
+
+  TalonFX frontleft = new TalonFX(0);
+  TalonFX frontleftrotate = new TalonFX(0);
 
   /** Creates a new SwerveDrive. */
   public SwerveDrive() {
 
+    
 
     kinematics = new SwerveDriveKinematics(
 
@@ -38,7 +50,7 @@ public class SwerveDrive extends SubsystemBase {
       new Translation2d(Units.inchesToMeters(-10), Units.inchesToMeters(-10))
     );
 
-    gyro = new PigeonIMU(null);
+    gyro = new AHRS(null);
 
     odometry = new SwerveDriveOdometry(
       kinematics,
