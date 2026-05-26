@@ -4,71 +4,86 @@
 
 package frc.robot.subsystems;
 
-import com.ctre.phoenix.motorcontrol.NeutralMode;
-import com.ctre.phoenix.sensors.PigeonIMU;
+import static edu.wpi.first.units.Units.Meter;
+
+import java.io.File;
+import java.util.function.Supplier;
+
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.swerve.SwerveModule;
 import com.studica.frc.AHRS;
-import com.studica.frc.AHRS.NavXComType;
-import com.studica.frc.AHRS.NavXUpdateRate;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.kinematics.Kinematics;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
-import edu.wpi.first.math.kinematics.SwerveModulePosition;
-import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.math.util.Units;
+import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
+import swervelib.SwerveInputStream;
+import swervelib.SwerveModule;
+import swervelib.parser.SwerveParser;
 
 public class SwerveDrive extends SubsystemBase {
 
-  SwerveDriveKinematics kinematics;
-  SwerveDriveOdometry odometry;
   AHRS gyro;
   SwerveModule[] swerveModule;
 
   TalonFX frontleft = new TalonFX(0);
   TalonFX frontleftrotate = new TalonFX(0);
 
+
+    File directory = new File(Filesystem.getDeployDirectory(),"swerve");
+    
+    swervelib.SwerveDrive swerveDrive;
+    
+    private final Pose2d startingPose = new Pose2d(new Translation2d(Meter.of(16),
+                                                                              Meter.of(4)),
+                                                            Rotation2d.fromDegrees(180));
+
+
   /** Creates a new SwerveDrive. */
   public SwerveDrive() {
 
-    
+    try
+    {
+      swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED, startingPose);
 
-    kinematics = new SwerveDriveKinematics(
-
-      //localizaçoes dos centros das rodas em relação ao centro do robô (encoder)
-
-      new Translation2d(Units.inchesToMeters(10), Units.inchesToMeters(10)),
-      new Translation2d(Units.inchesToMeters(10), Units.inchesToMeters(-10)),
-      new Translation2d(Units.inchesToMeters(-10), Units.inchesToMeters(10)),
-      new Translation2d(Units.inchesToMeters(-10), Units.inchesToMeters(-10))
-    );
+      // swerveDrive = new SwerveParser(directory).createSwerveDrive(maximumSpeed, angleConversionFactor, driveConversionFactor);
+    } catch (Exception e)
+    {
+      throw new RuntimeException(e);
+    }
 
     gyro = new AHRS(null);
-
-    odometry = new SwerveDriveOdometry(
-      kinematics,
-      null,
-      new SwerveModulePosition[] {new SwerveModulePosition(), new SwerveModulePosition(), new SwerveModulePosition(), new SwerveModulePosition()});
-      new Pose2d(0,0, new Rotation2d());
-      
     
   }
 
 
   public void drive(){
-    ChassisSpeeds testSpeeds = new ChassisSpeeds(Units.inchesToMeters(14), Units.inchesToMeters(4), Units.degreesToRadians(30));
-    SwerveModuleState[] statesOfModules = kinematics.toSwerveModuleStates(testSpeeds);
+    
   }
 
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
   }
+
+
+public swervelib.SwerveDrive getSwerveDrive() {
+    return swerveDrive;
+
+    }
+
+
+public void driveFieldOriented(ChassisSpeeds velocity) {
+    swerveDrive.driveFieldOriented(velocity);
+}
+public Command driveFieldOriented(Supplier<ChassisSpeeds> velocity){
+    return run(()->{
+      swerveDrive.driveFieldOriented(velocity.get());;
+    });
+
+}
+
 }
