@@ -11,6 +11,8 @@ import java.util.function.Supplier;
 
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.studica.frc.AHRS;
+import com.studica.frc.AHRS.NavXComType;
+import com.studica.frc.AHRS.NavXUpdateRate;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -20,7 +22,6 @@ import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import swervelib.SwerveInputStream;
 import swervelib.SwerveModule;
 import swervelib.parser.SwerveParser;
 
@@ -29,17 +30,13 @@ public class SwerveDrive extends SubsystemBase {
   AHRS gyro;
   SwerveModule[] swerveModule;
 
-  TalonFX frontleft = new TalonFX(0);
-  TalonFX frontleftrotate = new TalonFX(0);
-
-
     File directory = new File(Filesystem.getDeployDirectory(),"swerve");
     
     swervelib.SwerveDrive swerveDrive;
     
-    private final Pose2d startingPose = new Pose2d(new Translation2d(Meter.of(16),
-                                                                              Meter.of(4)),
-                                                            Rotation2d.fromDegrees(180));
+    private final Pose2d startingPose = new Pose2d(new Translation2d(Meter.of(0),
+                                                                     Meter.of(0)),
+                                                            Rotation2d.fromDegrees(gyro.getAngle()));
 
 
   /** Creates a new SwerveDrive. */
@@ -49,7 +46,6 @@ public class SwerveDrive extends SubsystemBase {
     {
       swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED, startingPose);
 
-      // swerveDrive = new SwerveParser(directory).createSwerveDrive(maximumSpeed, angleConversionFactor, driveConversionFactor);
     } catch (Exception e)
     {
       throw new RuntimeException(e);
