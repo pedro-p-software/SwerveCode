@@ -7,25 +7,24 @@ package frc.robot.subsystems;
 import static edu.wpi.first.units.Units.Meter;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
-
-import com.studica.frc.AHRS;
 
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Config;
 import frc.robot.Constants;
+import swervelib.SwerveController;
 import swervelib.SwerveDrive;
 import swervelib.SwerveDriveTest;
-import swervelib.SwerveInputStream;
-import swervelib.SwerveModule;
 import swervelib.math.SwerveMath;
 import swervelib.parser.SwerveControllerConfiguration;
 import swervelib.parser.SwerveDriveConfiguration;
@@ -35,43 +34,38 @@ import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
 
 public class SwerveSubsystem extends SubsystemBase {
 
-  AHRS gyro;
-  SwerveModule[] swerveModule;
 
-    File directory = new File(Filesystem.getDeployDirectory(),"swerve");
+    private SwerveDrive swerveDrive;
+                                              
     
-    swervelib.SwerveDrive swerveDrive;
+      /** Creates a new SwerveDrive. */
+      public SwerveSubsystem(File directory) {
     
-                                          
-
-  /** Creates a new SwerveDrive. */
-  public SwerveSubsystem(File directory) {
-
-    Pose2d startingPose = new Pose2d(new Translation2d(Meter.of(1),
-                                                      Meter.of(4)),
-                                                      Rotation2d.fromDegrees(0));
-
-    SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
-
-    try
-    {
-      swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED, startingPose);
-
-    } catch (Exception e){
-
-      throw new RuntimeException(e);
-
-    }
+        Pose2d startingPose = new Pose2d(new Translation2d(Meter.of(1),
+                                                          Meter.of(4)),
+                                                          Rotation2d.fromDegrees(0));
     
-    swerveDrive.setHeadingCorrection(false);
-    swerveDrive.setCosineCompensator(false);
-    swerveDrive.setAngularVelocityCompensation(true, true, 0.1); 
-    swerveDrive.setModuleEncoderAutoSynchronize(false, 1);
+        SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
     
-  }
-
-  public void SwerveSubsystem(SwerveDriveConfiguration SwerveCFG, SwerveControllerConfiguration ControllerCFG){
-    swerveDrive = new SwerveDrive(SwerveCFG, ControllerCFG, Constants.MAX_SPEED, new Pose2d(
+        try
+        {
+          swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED, startingPose);
+    
+        } catch (Exception e){
+    
+          throw new RuntimeException(e);
+    
+        }
+        
+        swerveDrive.setHeadingCorrection(false);
+        swerveDrive.setCosineCompensator(false);
+        swerveDrive.setAngularVelocityCompensation(true, true, 0.1); 
+        swerveDrive.setModuleEncoderAutoSynchronize(false, 1);
+        
+      }
+    
+      public void SwerveSubsystem(SwerveDriveConfiguration SwerveCFG, SwerveControllerConfiguration ControllerCFG){
+        swerveDrive = new SwerveDrive(SwerveCFG, ControllerCFG, Constants.MAX_SPEED, new Pose2d(
       new Translation2d(
         Meter.of(2), Meter.of(0)), Rotation2d.fromDegrees(0)));
   }
@@ -97,6 +91,12 @@ public class SwerveSubsystem extends SubsystemBase {
             new Config(),
             this, swerveDrive),
         3.0, 5.0, 3.0);
+  }
+
+  public Command centerModulesCommand()
+  {
+    return run(() -> Arrays.asList(swerveDrive.getModules())
+                           .forEach(it -> it.setAngle(0.0)));
   }
 
   public Command driveForward()
@@ -150,9 +150,16 @@ public class SwerveSubsystem extends SubsystemBase {
                       false); // Open loop is disabled since it shouldn't be used most of the time.
   }
 
-  public void driveFieldOriented(ChassisSpeeds driveDirectAngle)
+  public void driveFieldOriented(ChassisSpeeds velocity)
   {
-    swerveDrive.driveFieldOriented(driveDirectAngle);
+    swerveDrive.driveFieldOriented(velocity);
+  }
+
+  public Command driveFieldOriented(Supplier<ChassisSpeeds> velocity)
+  {
+    return run(() -> {
+      swerveDrive.driveFieldOriented(velocity.get());
+    });
   }
 
   public void drive(ChassisSpeeds velocity)
@@ -165,4 +172,98 @@ public class SwerveSubsystem extends SubsystemBase {
     return swerveDrive;
 
   }
+
+  public SwerveDriveKinematics getKinematics()
+{
+  return swerveDrive.kinematics;
+}
+
+public void resetOdometry(Pose2d initialHolonomicPose)
+{
+  swerveDrive.resetOdometry(initialHolonomicPose);
+}
+
+public Pose2d getPose()
+{
+  return swerveDrive.getPose();
+}
+
+public void setChassisSpeeds(ChassisSpeeds chassisSpeeds)
+{
+  swerveDrive.setChassisSpeeds(chassisSpeeds);
+}
+
+public void postTrajectory(Trajectory trajectory)
+{
+  swerveDrive.postTrajectory(trajectory);
+}
+
+public void zeroGyro()
+{
+  swerveDrive.zeroGyro();
+}
+
+public void setMotorBrake(boolean brake){
+
+  swerveDrive.setMotorIdleMode(brake);
+}
+
+public Rotation2d getHeading()
+{
+  return getPose().getRotation();
+}
+
+public ChassisSpeeds getTargetSpeeds(double xInput, double yInput, double headingX, double headingY)
+{
+  Translation2d scaledInputs = SwerveMath.cubeTranslation(new Translation2d(xInput, yInput));
+  return swerveDrive.swerveController.getTargetSpeeds(
+      scaledInputs.getX(),
+      scaledInputs.getY(),
+      headingX,
+      headingY,
+      getHeading().getRadians(),
+      Constants.MAX_SPEED);
+}
+
+public ChassisSpeeds getTargetSpeeds(double xInput, double yInput, Rotation2d angle)
+{
+  Translation2d scaledInputs = SwerveMath.cubeTranslation(new Translation2d(xInput, yInput));
+
+  return swerveDrive.swerveController.getTargetSpeeds(
+      scaledInputs.getX(),
+      scaledInputs.getY(),
+      angle.getRadians(),
+      getHeading().getRadians(),
+      Constants.MAX_SPEED);
+}
+
+public ChassisSpeeds getFieldVelocity()
+{
+  return swerveDrive.getFieldVelocity();
+}
+
+public ChassisSpeeds getRobotVelocity()
+{
+  return swerveDrive.getRobotVelocity();
+}
+
+public SwerveController getSwerveController()
+{
+  return swerveDrive.swerveController;
+}
+
+public SwerveDriveConfiguration getSwerveDriveConfiguration()
+{
+  return swerveDrive.swerveDriveConfiguration;
+}
+
+public void lock()
+{
+  swerveDrive.lockPose();
+}
+
+public Rotation2d getPitch()
+{
+  return swerveDrive.getPitch();
+}
 }
