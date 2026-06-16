@@ -78,10 +78,10 @@ translationHeadingOffset(Rotation2d.fromDegrees(0));
   }
   }
   private void configureBindings() {
-    Command driveFieldOrientedDirectAngle      = drivebase.driveFieldOriented(driveDirectAngle);
+    Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle);
     Command driveFieldOrientedAnglularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
-    Command driveRobotOrientedAngularVelocity  = drivebase.driveFieldOriented(driveRobotOriented);
-    Command driveFieldOrientedDirectAngleKeyboard      = drivebase.driveFieldOriented(driveDirectAngleKeyboard);
+    Command driveRobotOrientedAngularVelocity = drivebase.driveFieldOriented(driveRobotOriented);
+    Command driveFieldOrientedDirectAngleKeyboard = drivebase.driveFieldOriented(driveDirectAngleKeyboard);
     Command driveFieldOrientedAnglularVelocityKeyboard = drivebase.driveFieldOriented(driveAngularVelocityKeyboard);    
     
     if (DriverStation.isTest())
@@ -91,7 +91,7 @@ translationHeadingOffset(Rotation2d.fromDegrees(0));
       controle.square().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
       controle.share().onTrue((Commands.runOnce(drivebase::zeroGyro)));
       controle.options().whileTrue(drivebase.centerModulesCommand());
-      controle.L1().onTrue(Commands.none());
+      controle.L2().onTrue(Commands.none());
       controle.R2().onTrue(Commands.none());
     } else
     {
