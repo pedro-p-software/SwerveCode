@@ -1,6 +1,6 @@
 {
   "imu": {
-    "type": "navx",
+    "type": "ADXRS450",
     "id": 0,
     "canbus": null
   },

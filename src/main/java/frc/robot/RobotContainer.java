@@ -23,7 +23,7 @@ public class RobotContainer {
  
   private final CommandPS4Controller controle = new CommandPS4Controller(0);
   private final SwerveSubsystem drivebase = new SwerveSubsystem(new File(Filesystem.getDeployDirectory(),
-                                                                                "swerve/falcon"));
+                                                                                "swerve"));
   private final SendableChooser<Command> autoChooser = new SendableChooser<>();
 
 
@@ -79,14 +79,16 @@ translationHeadingOffset(Rotation2d.fromDegrees(0));
   }
   private void configureBindings() {
     Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle);
-    Command driveFieldOrientedAnglularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
+    Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
     Command driveRobotOrientedAngularVelocity = drivebase.driveFieldOriented(driveRobotOriented);
     Command driveFieldOrientedDirectAngleKeyboard = drivebase.driveFieldOriented(driveDirectAngleKeyboard);
-    Command driveFieldOrientedAnglularVelocityKeyboard = drivebase.driveFieldOriented(driveAngularVelocityKeyboard);    
+    Command driveFieldOrientedAngularVelocityKeyboard = drivebase.driveFieldOriented(driveAngularVelocityKeyboard);    
     
+    drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
+
     if (DriverStation.isTest())
     {
-      drivebase.setDefaultCommand(driveFieldOrientedAnglularVelocity); // Overrides drive command above!
+      drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity); // Overrides drive command above!
 
       controle.square().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
       controle.share().onTrue((Commands.runOnce(drivebase::zeroGyro)));
