@@ -4,7 +4,9 @@
 
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meter;
+import static edu.wpi.first.units.Units.Radians;
 
 import java.io.File;
 import java.util.Arrays;
@@ -106,6 +108,13 @@ public class SwerveSubsystem extends SubsystemBase {
     }).finallyDo(() -> swerveDrive.drive(new Translation2d(0, 0), 0, false, false));
   }
 
+  public Command turn90(){
+
+    return run(()->{
+      swerveDrive.drive(new Translation2d(0, 0), 0, false, false);
+    }).finallyDo(()-> swerveDrive.drive(new Translation2d(0,0), Radians.convertFrom(90, Degrees), false, false));
+  }
+
   public void replaceSwerveModuleFeedforward(double kS, double kV, double kA)
   {
     swerveDrive.replaceSwerveModuleFeedforward(new SimpleMotorFeedforward(kS, kV, kA));
@@ -198,7 +207,7 @@ public void postTrajectory(Trajectory trajectory)
   swerveDrive.postTrajectory(trajectory);
 }
 
-public void zeroGyro()
+public void resetGyro()
 {
   swerveDrive.zeroGyro();
 }

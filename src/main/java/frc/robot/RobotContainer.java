@@ -64,45 +64,46 @@ translationHeadingOffset(Rotation2d.fromDegrees(0));
     DriverStation.silenceJoystickConnectionWarning(true);
 
     //Set the default auto (do nothing) 
-    autoChooser.setDefaultOption("Do Nothing", Commands.runOnce(drivebase::zeroGyro)
+    autoChooser.setDefaultOption("Do Nothing", Commands.runOnce(drivebase::resetGyro)
                                                     .andThen(Commands.none()));
 
     //Add a simple auto option to have the robot drive forward for 1 second then stop
-    autoChooser.addOption("Drive Forward", Commands.runOnce(drivebase::zeroGyro).withTimeout(.2)
+    autoChooser.addOption("Drive Forward", Commands.runOnce(drivebase::resetGyro).withTimeout(.2)
                                                 .andThen(drivebase.driveForward().withTimeout(1)));
     //Put the autoChooser on the SmartDashboard
     SmartDashboard.putData("Auto Chooser", autoChooser);
 
     if (autoChooser.getSelected() == null ) {
-    RobotModeTriggers.autonomous().onTrue(Commands.runOnce(drivebase::zeroGyro));
+    RobotModeTriggers.autonomous().onTrue(Commands.runOnce(drivebase::resetGyro));
   }
   }
   private void configureBindings() {
     Command driveFieldOrientedDirectAngle = drivebase.driveFieldOriented(driveDirectAngle);
+
     Command driveFieldOrientedAngularVelocity = drivebase.driveFieldOriented(driveAngularVelocity);
+
     Command driveRobotOrientedAngularVelocity = drivebase.driveFieldOriented(driveRobotOriented);
+
     Command driveFieldOrientedDirectAngleKeyboard = drivebase.driveFieldOriented(driveDirectAngleKeyboard);
+
     Command driveFieldOrientedAngularVelocityKeyboard = drivebase.driveFieldOriented(driveAngularVelocityKeyboard);    
     
+    
     drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity);
-
-    if (DriverStation.isTest())
-    {
-      drivebase.setDefaultCommand(driveFieldOrientedAngularVelocity); // Overrides drive command above!
-
+      // trava o swerve
       controle.square().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
-      controle.share().onTrue((Commands.runOnce(drivebase::zeroGyro)));
+
+      //reseta o gyro
+      controle.triangle().onTrue((Commands.runOnce(drivebase::resetGyro)));
+
+      //deixa todos modulos em 0 graus
       controle.options().whileTrue(drivebase.centerModulesCommand());
-      controle.L2().onTrue(Commands.none());
-      controle.R2().onTrue(Commands.none());
-    } else
-    {
-      controle.cross().onTrue((Commands.runOnce(drivebase::zeroGyro)));
-      controle.share().whileTrue(Commands.none());
-      controle.options().whileTrue(Commands.none());
-      controle.L2().whileTrue(Commands.runOnce(drivebase::lock, drivebase).repeatedly());
-      controle.R2().onTrue(Commands.none());
-    }
+
+      //vira 90 graus (eu acho)
+      controle.circle().onTrue(Commands.runOnce(drivebase::turn90));
+
+      //move pra frente (eu acho)
+      controle.circle().onTrue(Commands.runOnce(drivebase::driveForward));
 
   }
 
