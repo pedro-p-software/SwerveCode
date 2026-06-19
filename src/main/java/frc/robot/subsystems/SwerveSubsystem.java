@@ -65,34 +65,10 @@ public class SwerveSubsystem extends SubsystemBase {
         swerveDrive.setModuleEncoderAutoSynchronize(false, 1);
         
       }
-    
-      public void SwerveSubsystem(SwerveDriveConfiguration SwerveCFG, SwerveControllerConfiguration ControllerCFG){
-        swerveDrive = new SwerveDrive(SwerveCFG, ControllerCFG, Constants.MAX_SPEED, new Pose2d(
-      new Translation2d(
-        Meter.of(2), Meter.of(0)), Rotation2d.fromDegrees(0)));
-  }
 
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-  }
-
-  public Command sysIdDriveMotorCommand()
-  {
-    return SwerveDriveTest.generateSysIdCommand(
-        SwerveDriveTest.setDriveSysIdRoutine(
-            new Config(),
-            this, swerveDrive, 12, true),
-        3.0, 5.0, 3.0);
-  }
-
-  public Command sysIdAngleMotorCommand()
-  {
-    return SwerveDriveTest.generateSysIdCommand(
-        SwerveDriveTest.setAngleSysIdRoutine(
-            new Config(),
-            this, swerveDrive),
-        3.0, 5.0, 3.0);
   }
 
   public Command centerModulesCommand()
@@ -106,13 +82,6 @@ public class SwerveSubsystem extends SubsystemBase {
     return run(() -> {
       swerveDrive.drive(new Translation2d(1, 0), 0, false, false);
     }).finallyDo(() -> swerveDrive.drive(new Translation2d(0, 0), 0, false, false));
-  }
-
-  public Command turn90(){
-
-    return run(()->{
-      swerveDrive.drive(new Translation2d(0, 0), 0, false, false);
-    }).finallyDo(()-> swerveDrive.drive(new Translation2d(0,0), Radians.convertFrom(90, Degrees), false, false));
   }
 
   public void replaceSwerveModuleFeedforward(double kS, double kV, double kA)
@@ -131,32 +100,6 @@ public class SwerveSubsystem extends SubsystemBase {
                         true,
                         false);
     });
-  }
-
-  public Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier headingX,
-                              DoubleSupplier headingY)
-  {
-    // swerveDrive.setHeadingCorrection(true); // Normally you would want heading correction for this kind of control. (quero)
-    return run(() -> {
-
-      Translation2d scaledInputs = SwerveMath.scaleTranslation(new Translation2d(translationX.getAsDouble(),
-                                                                                 translationY.getAsDouble()), 0.8);
-
-      // Make the robot move (ta)
-      driveFieldOriented(swerveDrive.swerveController.getTargetSpeeds(scaledInputs.getX(), scaledInputs.getY(),
-                                                                      headingX.getAsDouble(),
-                                                                      headingY.getAsDouble(),
-                                                                      swerveDrive.getOdometryHeading().getRadians(),
-                                                                      swerveDrive.getMaximumChassisVelocity()));
-    });
-  }
-
-  public void drive(Translation2d translation, double rotation, boolean fieldRelative)
-  {
-    swerveDrive.drive(translation,
-                      rotation,
-                      fieldRelative,
-                      false); // Open loop is disabled since it shouldn't be used most of the time.
   }
 
   public void driveFieldOriented(ChassisSpeeds velocity)
@@ -270,6 +213,11 @@ public void lock()
 {
   swerveDrive.lockPose();
 }
+
+public Command lockSwerve(){
+  return this.run(
+    ()->swerveDrive.lockPose());
+  } 
 
 public Rotation2d getPitch()
 {
