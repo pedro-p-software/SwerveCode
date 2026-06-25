@@ -4,15 +4,13 @@
 
 package frc.robot.subsystems;
 
-import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meter;
-import static edu.wpi.first.units.Units.Radians;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -79,6 +77,21 @@ public class SwerveSubsystem extends SubsystemBase {
     return run(() -> {
       swerveDrive.drive(new Translation2d(1, 0), 0, false, false);
     }).finallyDo(() -> swerveDrive.drive(new Translation2d(0, 0), 0, false, false));
+  }
+
+  //maybe funciona
+  public Command turnCommand(double degrees){
+    PIDController turnController = new PIDController(20, 0.1, 0);
+
+    turnController.enableContinuousInput(-180, 180);
+    
+    return run(()->{
+      double current = getHeading().getDegrees();
+      double omega = turnController.calculate(current, degrees);
+
+      setChassisSpeeds(new ChassisSpeeds(0.0, 0.0, omega));
+    }).until(()-> Math.abs(getHeading().getDegrees() - degrees) < 2)
+    .finallyDo(()-> setChassisSpeeds(new ChassisSpeeds()));
   }
 
   public void replaceSwerveModuleFeedforward(double kS, double kV, double kA)

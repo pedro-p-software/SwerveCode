@@ -39,6 +39,7 @@ public class RobotContainer {
       //deixa todos modulos em 0 graus
       new JoystickButton(controle, PS4Controller.Button.kOptions.value).whileTrue(drivebase.centerModulesCommand());
 
+      new JoystickButton(controle, PS4Controller.Button.kCircle.value).onTrue(drivebase.turnCommand(90));
   }
 
   public Command getAutonomousCommand() {
