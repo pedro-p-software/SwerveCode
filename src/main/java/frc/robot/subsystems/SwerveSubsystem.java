@@ -87,9 +87,9 @@ public class SwerveSubsystem extends SubsystemBase {
     
     return run(()->{
       double current = getHeading().getDegrees();
-      double omega = turnController.calculate(current, degrees);
+      double pidPOWER = turnController.calculate(current, degrees);
 
-      setChassisSpeeds(new ChassisSpeeds(0.0, 0.0, omega));
+      setChassisSpeeds(new ChassisSpeeds(0.0, 0.0, pidPOWER));
     }).until(()-> Math.abs(getHeading().getDegrees() - degrees) < 2)
     .finallyDo(()-> setChassisSpeeds(new ChassisSpeeds()));
   }
