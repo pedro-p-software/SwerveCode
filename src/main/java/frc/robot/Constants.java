@@ -18,5 +18,5 @@ public final class Constants {
     public static final double DEADBAND = 0.05;
   }
 
-  public static final double MAX_SPEED = 5.4;
+  public static final double MAX_SPEED = 3.54;
 }

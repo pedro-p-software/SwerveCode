@@ -73,30 +73,22 @@ public class SwerveSubsystem extends SubsystemBase {
                            .forEach(it -> it.setAngle(0.0)));
   }
 
-  public Command driveForward()
+//Fazer dps
+  public Command driveForwardAndTurn()
   {
     return run(() -> {
-      swerveDrive.drive(new Translation2d(1, 0), 0, false, false);
-    }).finallyDo(() -> swerveDrive.drive(new Translation2d(0, 0), 0, false, false));
-  }
+      turnController.calculate(90);
+    });}
 
   public void turnControllerReset(){
     turnController.reset();
   }
   //maybe funciona
-  public Command turnCommand(double degrees){
-    turnController = new PIDController(2, 0, 0);
-
-    turnController.enableContinuousInput(-180, 180);
-    
+  public Command turnCommand(double speed){
+   
     return run(()->{
-      double current = getHeading().getDegrees();
-      double pidPOWER = turnController.calculate(current, degrees);
-
-      setChassisSpeeds(new ChassisSpeeds(0.0, 0.0, pidPOWER));
-    }).until(()-> Math.abs(getHeading().getDegrees() - degrees) < 2)
-    .finallyDo(()-> setChassisSpeeds(new ChassisSpeeds(0,0,0)));
-  }
+      swerveDrive.drive(new Translation2d(0,0), speed, true, false);
+  });}
 
   public Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX)
   {
@@ -109,13 +101,7 @@ public class SwerveSubsystem extends SubsystemBase {
                         false);
     });
   }
-  public Command turnCommand2(double angularRotationX)
-  {
-    return run(() -> {
-      // Make the robot move turning
-      swerveDrive.drive(new Translation2d(0,0),angularRotationX,true, false );
-    });
-  }
+
   public void driveFieldOriented(ChassisSpeeds velocity)
   {
     swerveDrive.driveFieldOriented(velocity);
@@ -152,11 +138,6 @@ public void resetOdometry(Pose2d initialHolonomicPose)
 public Pose2d getPose()
 {
   return swerveDrive.getPose();
-}
-
-public void setChassisSpeeds(ChassisSpeeds chassisSpeeds)
-{
-  swerveDrive.setChassisSpeeds(chassisSpeeds);
 }
 
 public void postTrajectory(Trajectory trajectory)
