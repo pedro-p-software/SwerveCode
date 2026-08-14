@@ -6,6 +6,7 @@ package frc.robot;
 
 import java.io.File;
 import java.util.function.DoubleSupplier;
+
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -27,19 +28,21 @@ public class RobotContainer {
   private void configureBindings() {
     DoubleSupplier leftX = controle::getLeftX;
     DoubleSupplier leftY = controle::getLeftY;
-    DoubleSupplier heading = controle::getRightY;
+    DoubleSupplier heading = controle::getRightX;
 
-    drivebase.setDefaultCommand(drivebase.driveCommand(leftX, leftY, heading));
+    drivebase.setDefaultCommand(drivebase.driveCommand(leftY, leftX, heading));
       // trava o swerve
       new JoystickButton(controle, PS4Controller.Button.kSquare.value).whileTrue(drivebase.lockSwerve());
 
+      new JoystickButton(controle, PS4Controller.Button.kShare.value).onTrue(Commands.runOnce(drivebase::turnControllerReset));
+      
       //reseta o gyro
       new JoystickButton(controle, PS4Controller.Button.kTriangle.value).onTrue((Commands.runOnce(drivebase::resetGyro)));
 
       //deixa todos modulos em 0 graus
       new JoystickButton(controle, PS4Controller.Button.kOptions.value).whileTrue(drivebase.centerModulesCommand());
 
-      new JoystickButton(controle, PS4Controller.Button.kCircle.value).onTrue(drivebase.turnCommand(90));
+      new JoystickButton(controle, PS4Controller.Button.kCircle.value).onTrue(drivebase.turnCommand(-90));
   }
 
   public Command getAutonomousCommand() {

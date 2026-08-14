@@ -11,9 +11,9 @@ import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
@@ -33,7 +33,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
 
     private SwerveDrive swerveDrive;
-                                              
+    PIDController turnController = new PIDController(1, 0.1, 0);                                          
     
       /** Creates a new SwerveDrive. */
       public SwerveSubsystem(File directory) {
@@ -58,6 +58,7 @@ public class SwerveSubsystem extends SubsystemBase {
         swerveDrive.setCosineCompensator(false);
         swerveDrive.setAngularVelocityCompensation(true, true, 0.1); 
         swerveDrive.setModuleEncoderAutoSynchronize(false, 1);
+        swerveDrive.setGyro(new Rotation3d(0,0,0));
         
       }
 
@@ -79,9 +80,12 @@ public class SwerveSubsystem extends SubsystemBase {
     }).finallyDo(() -> swerveDrive.drive(new Translation2d(0, 0), 0, false, false));
   }
 
+  public void turnControllerReset(){
+    turnController.reset();
+  }
   //maybe funciona
   public Command turnCommand(double degrees){
-    PIDController turnController = new PIDController(20, 0.1, 0);
+    turnController = new PIDController(2, 0, 0);
 
     turnController.enableContinuousInput(-180, 180);
     
@@ -91,12 +95,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
       setChassisSpeeds(new ChassisSpeeds(0.0, 0.0, pidPOWER));
     }).until(()-> Math.abs(getHeading().getDegrees() - degrees) < 2)
-    .finallyDo(()-> setChassisSpeeds(new ChassisSpeeds()));
-  }
-
-  public void replaceSwerveModuleFeedforward(double kS, double kV, double kA)
-  {
-    swerveDrive.replaceSwerveModuleFeedforward(new SimpleMotorFeedforward(kS, kV, kA));
+    .finallyDo(()-> setChassisSpeeds(new ChassisSpeeds(0,0,0)));
   }
 
   public Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX)
@@ -105,12 +104,18 @@ public class SwerveSubsystem extends SubsystemBase {
       // Make the robot move
       swerveDrive.drive(SwerveMath.scaleTranslation(new Translation2d(
                             translationX.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
-                            translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity()), 0.8),
+                            translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity()), 1.8),
                         Math.pow(angularRotationX.getAsDouble(), 3) * swerveDrive.getMaximumChassisAngularVelocity(), true,
                         false);
     });
   }
-
+  public Command turnCommand2(double angularRotationX)
+  {
+    return run(() -> {
+      // Make the robot move turning
+      swerveDrive.drive(new Translation2d(0,0),angularRotationX,true, false );
+    });
+  }
   public void driveFieldOriented(ChassisSpeeds velocity)
   {
     swerveDrive.driveFieldOriented(velocity);
