@@ -34,6 +34,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
 
     private SwerveDrive swerveDrive;
+    private PIDController headingController = new PIDController(0.5, 0, 0);
     
       /** Creates a new SwerveDrive. */
       public SwerveSubsystem(File directory) {
@@ -77,7 +78,16 @@ public class SwerveSubsystem extends SubsystemBase {
                            .forEach(it -> it.setAngle(0.0)));
   }
 
-  //maybe funciona
+  public Command goAndTurn(double angle)
+  {
+    resetGyro();
+    return run(()->{
+      double current = getHeading().getDegrees();
+      double output = headingController.calculate(current, angle);
+      swerveDrive.drive(new Translation2d(1,0), output, true, false);
+    });
+  }
+  //funciona
   public Command turnCommand(double speed){
    
     return run(()->{
