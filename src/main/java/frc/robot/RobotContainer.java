@@ -34,8 +34,6 @@ public class RobotContainer {
       // trava o swerve
       new JoystickButton(controle, PS4Controller.Button.kSquare.value).whileTrue(drivebase.lockSwerve());
 
-      new JoystickButton(controle, PS4Controller.Button.kShare.value).onTrue(Commands.runOnce(drivebase::turnControllerReset));
-      
       //reseta o gyro
       new JoystickButton(controle, PS4Controller.Button.kTriangle.value).onTrue((Commands.runOnce(drivebase::resetGyro)));
 

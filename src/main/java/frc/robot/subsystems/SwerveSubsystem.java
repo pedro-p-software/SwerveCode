@@ -18,6 +18,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.trajectory.Trajectory;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
@@ -33,7 +34,6 @@ public class SwerveSubsystem extends SubsystemBase {
 
 
     private SwerveDrive swerveDrive;
-    PIDController turnController = new PIDController(1, 0.1, 0);                                          
     
       /** Creates a new SwerveDrive. */
       public SwerveSubsystem(File directory) {
@@ -65,6 +65,10 @@ public class SwerveSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
+    SmartDashboard.putNumber("Module 1 Velocity", swerveDrive.getModules()[0].getDriveMotor().getVelocity());
+    SmartDashboard.putNumber("Module 2 Velocity", swerveDrive.getModules()[1].getDriveMotor().getVelocity());
+    SmartDashboard.putNumber("Module 3 Velocity", swerveDrive.getModules()[2].getDriveMotor().getVelocity());
+    SmartDashboard.putNumber("Module 4 Velocity", swerveDrive.getModules()[3].getDriveMotor().getVelocity());
   }
 
   public Command centerModulesCommand()
@@ -73,16 +77,6 @@ public class SwerveSubsystem extends SubsystemBase {
                            .forEach(it -> it.setAngle(0.0)));
   }
 
-//Fazer dps
-  public Command driveForwardAndTurn()
-  {
-    return run(() -> {
-      turnController.calculate(90);
-    });}
-
-  public void turnControllerReset(){
-    turnController.reset();
-  }
   //maybe funciona
   public Command turnCommand(double speed){
    
