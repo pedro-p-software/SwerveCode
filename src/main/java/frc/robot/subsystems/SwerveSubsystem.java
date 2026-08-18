@@ -4,12 +4,15 @@
 
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meter;
+import static edu.wpi.first.units.Units.Radians;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.function.DoubleSupplier;
-import java.util.function.Supplier;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -55,7 +58,7 @@ public class SwerveSubsystem extends SubsystemBase {
     
         }
         
-        swerveDrive.setHeadingCorrection(false);
+        swerveDrive.setHeadingCorrection(true);
         swerveDrive.setCosineCompensator(false);
         swerveDrive.setAngularVelocityCompensation(true, true, 0.1); 
         swerveDrive.setModuleEncoderAutoSynchronize(false, 1);
@@ -77,16 +80,29 @@ public class SwerveSubsystem extends SubsystemBase {
     return run(() -> Arrays.asList(swerveDrive.getModules())
                            .forEach(it -> it.setAngle(0.0)));
   }
+//Comando comentado por motivos de teste
+//  public Command goAndTurn(double x, double y, double angle)
+  //{
+    //resetGyro();
+    //return run(()->{
+      //headingController.enableContinuousInput(-180, 180);
+      //double current = getHeading().getDegrees();
+      //double output = headingController.calculate(current, angle);
+      //swerveDrive.drive(new Translation2d(x,y), output, true, false);
+    //}
+    //).until(()-> Math.abs(headingController.getError()) < 2);
+  //}
 
-  public Command goAndTurn(double angle)
-  {
-    resetGyro();
-    return run(()->{
-      double current = getHeading().getDegrees();
-      double output = headingController.calculate(current, angle);
-      swerveDrive.drive(new Translation2d(1,0), output, true, false);
-    });
-  }
+  //Confio mais nesse gosto mais
+    public Command goAndTurn(double x, double y, double angle){
+      resetGyro();
+      return run(()->{
+        double current = getHeading().getRadians();
+        double output = swerveDrive.getSwerveController().headingCalculate(current, Math.toRadians(angle));
+        swerveDrive.drive(new Translation2d(x, y), output, true, false);
+      }).until(()-> Math.abs(MathUtil.angleModulus(getHeading().getRadians() - Math.toRadians(angle))) < Math.toRadians(2));
+    }
+  //A diferernça é que o 1° usa um pid manual e o 2° o pid nativo do yagsl (se usar o 1° desativa a headingcorrection)
   //funciona
   public Command turnCommand(double speed){
    
@@ -100,7 +116,7 @@ public class SwerveSubsystem extends SubsystemBase {
       // Make the robot move
       swerveDrive.drive(SwerveMath.scaleTranslation(new Translation2d(
                             translationX.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
-                            translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity()), 1.8),
+                            translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity()), 0.8),
                         Math.pow(angularRotationX.getAsDouble(), 3) * swerveDrive.getMaximumChassisAngularVelocity(), true,
                         false);
     });
@@ -109,18 +125,6 @@ public class SwerveSubsystem extends SubsystemBase {
   public void driveFieldOriented(ChassisSpeeds velocity)
   {
     swerveDrive.driveFieldOriented(velocity);
-  }
-
-  public Command driveFieldOriented(Supplier<ChassisSpeeds> velocity)
-  {
-    return run(() -> {
-      swerveDrive.driveFieldOriented(velocity.get());
-    });
-  }
-
-  public void drive(ChassisSpeeds velocity)
-  {
-    swerveDrive.drive(velocity);
   }
 
   public SwerveDrive getSwerveDrive() {
@@ -206,11 +210,6 @@ public SwerveController getSwerveController()
 public SwerveDriveConfiguration getSwerveDriveConfiguration()
 {
   return swerveDrive.swerveDriveConfiguration;
-}
-
-public void lock()
-{
-  swerveDrive.lockPose();
 }
 
 public Command lockSwerve(){
