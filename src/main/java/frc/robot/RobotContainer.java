@@ -42,6 +42,9 @@ public class RobotContainer {
   
       //gira a x metros por segundo
       new JoystickButton(controle, PS4Controller.Button.kCircle.value).whileTrue(drivebase.turnCommand(2));
+
+      // vai ate uma posição
+      new JoystickButton(controle, PS4Controller.Button.kL2.value).whileTrue(drivebase.goAndTurn(0, 0, 0));
   }
 
   public Command getAutonomousCommand() {

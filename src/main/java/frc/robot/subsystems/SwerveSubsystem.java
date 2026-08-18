@@ -4,10 +4,7 @@
 
 package frc.robot.subsystems;
 
-import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meter;
-import static edu.wpi.first.units.Units.Radians;
-
 import java.io.File;
 import java.util.Arrays;
 import java.util.function.DoubleSupplier;
@@ -37,7 +34,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
 
     private SwerveDrive swerveDrive;
-    private PIDController headingController = new PIDController(0.5, 0, 0);
+    //private PIDController headingController = new PIDController(0.5, 0, 0);
     
       /** Creates a new SwerveDrive. */
       public SwerveSubsystem(File directory) {
