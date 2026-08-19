@@ -22,18 +22,19 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
-import swervelib.SwerveController;
-import swervelib.SwerveDrive;
-import swervelib.math.SwerveMath;
-import swervelib.parser.SwerveDriveConfiguration;
 import swervelib.parser.SwerveParser;
 import swervelib.telemetry.SwerveDriveTelemetry;
 import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
+import yams.mechanisms.swerve.SwerveDrive;
 
 public class SwerveSubsystem extends SubsystemBase {
 
 
     private SwerveDrive swerveDrive;
+    private double posX;
+    private double posY;
+    private double posAng;
+    
     //private PIDController headingController = new PIDController(0.5, 0, 0);
     
       /** Creates a new SwerveDrive. */
@@ -60,7 +61,10 @@ public class SwerveSubsystem extends SubsystemBase {
         swerveDrive.setAngularVelocityCompensation(true, true, 0.1); 
         swerveDrive.setModuleEncoderAutoSynchronize(false, 1);
         swerveDrive.setGyro(new Rotation3d(0,0,0));
-        
+
+        SmartDashboard.setDefaultNumber("AutoMove/goToX", 0);
+        SmartDashboard.setDefaultNumber("AutoMove/goToY", 0);
+        SmartDashboard.setDefaultNumber("AutoMove/goToAng", 0);
       }
 
   @Override
@@ -70,6 +74,11 @@ public class SwerveSubsystem extends SubsystemBase {
     SmartDashboard.putNumber("Module 2 Velocity", swerveDrive.getModules()[1].getDriveMotor().getVelocity());
     SmartDashboard.putNumber("Module 3 Velocity", swerveDrive.getModules()[2].getDriveMotor().getVelocity());
     SmartDashboard.putNumber("Module 4 Velocity", swerveDrive.getModules()[3].getDriveMotor().getVelocity());
+
+
+    posX = SmartDashboard.getNumber("AutoMove/goToX", posX);
+    posY = SmartDashboard.getNumber("AutoMove/goToY", posY);
+    posAng = SmartDashboard.getNumber("AutoMove/goToAng", posAng);
   }
 
   public Command centerModulesCommand()
@@ -91,13 +100,13 @@ public class SwerveSubsystem extends SubsystemBase {
   //}
 
   //Confio mais nesse gosto mais
-    public Command goAndTurn(double x, double y, double angle){
+    public Command goAndTurn(){
       resetGyro();
       return run(()->{
         double current = getHeading().getRadians();
-        double output = swerveDrive.getSwerveController().headingCalculate(current, Math.toRadians(angle));
-        swerveDrive.drive(new Translation2d(x, y), output, true, false);
-      }).until(()-> Math.abs(MathUtil.angleModulus(getHeading().getRadians() - Math.toRadians(angle))) < Math.toRadians(2));
+        double angOutput = swerveDrive.getSwerveController().headingCalculate(current, Math.toRadians(posAng));
+        swerveDrive.drive(new Translation2d(posX, posY), angOutput, true, false);
+      }).until(()-> Math.abs(MathUtil.angleModulus(getHeading().getRadians() - Math.toRadians(posAng))) < Math.toRadians(2));
     }
   //A diferernça é que o 1° usa um pid manual e o 2° o pid nativo do yagsl (se usar o 1° desativa a headingcorrection)
   //funciona
