@@ -1,16 +1,16 @@
 {
   "drive": {
-    "type": "falcon",
+    "type": "talonfx_krakenx60",
     "id": 4,
     "canbus": "rio"
   },
   "angle": {
-    "type": "falcon",
+    "type": "talonfx_krakenx60",
     "id": 8,
     "canbus": "rio"
   },
-  "encoder": {
-    "type": "cancoder",
+  "absoluteEncoder": {
+    "type": "cancoder_can",
     "id": 14,
     "canbus": "rio"
   },

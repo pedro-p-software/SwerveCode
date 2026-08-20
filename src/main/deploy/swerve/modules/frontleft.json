@@ -5,17 +5,17 @@
   },
   "absoluteEncoderOffset": 343.3,
   "drive": {
-    "type": "falcon",
+    "type": "talonfx_krakenx60",
     "id": 1,
     "canbus": "rio"
   },
   "angle": {
-    "type": "falcon",
+    "type": "talonfx_krakenx60",
     "id": 5,
     "canbus": "rio"
   },
-  "encoder": {
-    "type": "cancoder",
+  "absoluteEncoder": {
+    "type": "cancoder_can",
     "id": 11,
     "canbus": "rio"
   },

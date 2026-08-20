@@ -5,6 +5,9 @@
 package frc.robot.subsystems;
 
 import static edu.wpi.first.units.Units.Meter;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.function.DoubleSupplier;
@@ -13,42 +16,50 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
-import edu.wpi.first.math.trajectory.Trajectory;
+import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import swervelib.parser.SwerveParser;
-import swervelib.telemetry.SwerveDriveTelemetry;
-import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
+import yams.mechanisms.config.SwerveDriveConfig;
 import yams.mechanisms.swerve.SwerveDrive;
+import yams.mechanisms.swerve.SwerveModule;
+import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 
 public class SwerveSubsystem extends SubsystemBase {
 
 
-    private SwerveDrive swerveDrive;
+    private final SwerveDrive swerveDrive;
+    private final ADXRS450_Gyro gyro = new ADXRS450_Gyro();
+    private final PIDController headingController = new PIDController(0.5, 0, 0);
     private double posX;
     private double posY;
     private double posAng;
     
-    //private PIDController headingController = new PIDController(0.5, 0, 0);
-    
       /** Creates a new SwerveDrive. */
       public SwerveSubsystem(File directory) {
     
-        Pose2d startingPose = new Pose2d(new Translation2d(Meter.of(1),
-                                                          Meter.of(4)),
-                                                          Rotation2d.fromDegrees(0));
+        Pose2d startingPose = new Pose2d(
+        new Translation2d(
+        Meter.of(1),
+        Meter.of(4)),
+        Rotation2d.fromDegrees(0));
     
-        SwerveDriveTelemetry.verbosity = TelemetryVerbosity.HIGH;
-    
-        try
+      SwerveDriveConfig cfg = new SwerveDriveConfig()
+      .withSubsystem(this)
+      .withStartingPose(startingPose)
+      .withGyro(() -> gyro.getRotation2d().getMeasure())
+      .withMaximumChassisSpeed(MetersPerSecond.of(Constants.MAX_SPEED), RadiansPerSecond.of(2 * Math.PI))
+      .withTelemetry(TelemetryVerbosity.HIGH);
+      headingController.enableContinuousInput(-Math.PI, Math.PI);
+
+      try
         {
-          swerveDrive = new SwerveParser(directory).createSwerveDrive(Constants.MAX_SPEED, startingPose);
+          swerveDrive = new SwerveParser(directory).createSwerveDrive(cfg);
     
         } catch (Exception e){
     
@@ -56,12 +67,6 @@ public class SwerveSubsystem extends SubsystemBase {
     
         }
         
-        swerveDrive.setHeadingCorrection(true);
-        swerveDrive.setCosineCompensator(false);
-        swerveDrive.setAngularVelocityCompensation(true, true, 0.1); 
-        swerveDrive.setModuleEncoderAutoSynchronize(false, 1);
-        swerveDrive.setGyro(new Rotation3d(0,0,0));
-
         SmartDashboard.setDefaultNumber("AutoMove/goToX", 0);
         SmartDashboard.setDefaultNumber("AutoMove/goToY", 0);
         SmartDashboard.setDefaultNumber("AutoMove/goToAng", 0);
@@ -70,10 +75,13 @@ public class SwerveSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    SmartDashboard.putNumber("Module 1 Velocity", swerveDrive.getModules()[0].getDriveMotor().getVelocity());
-    SmartDashboard.putNumber("Module 2 Velocity", swerveDrive.getModules()[1].getDriveMotor().getVelocity());
-    SmartDashboard.putNumber("Module 3 Velocity", swerveDrive.getModules()[2].getDriveMotor().getVelocity());
-    SmartDashboard.putNumber("Module 4 Velocity", swerveDrive.getModules()[3].getDriveMotor().getVelocity());
+    SwerveModule[] modules = swerveDrive.getConfig().getModules();
+    for (int i = 0; i < modules.length; i++) {
+      SmartDashboard.putNumber("Module " + (i + 1) + " Velocity",
+          modules[i].getState().speedMetersPerSecond);
+    }
+
+    swerveDrive.updateTelemetry();
 
 
     posX = SmartDashboard.getNumber("AutoMove/goToX", posX);
@@ -83,8 +91,11 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public Command centerModulesCommand()
   {
-    return run(() -> Arrays.asList(swerveDrive.getModules())
-                           .forEach(it -> it.setAngle(0.0)));
+    return run(() -> swerveDrive.setSwerveModuleStates(
+        Arrays.stream(swerveDrive.getModuleStates())
+            .map(state -> new edu.wpi.first.math.kinematics.SwerveModuleState(
+                0, Rotation2d.kZero))
+            .toArray(edu.wpi.first.math.kinematics.SwerveModuleState[]::new)));
   }
 //Comando comentado por motivos de teste
 //  public Command goAndTurn(double x, double y, double angle)
@@ -104,8 +115,9 @@ public class SwerveSubsystem extends SubsystemBase {
       resetGyro();
       return run(()->{
         double current = getHeading().getRadians();
-        double angOutput = swerveDrive.getSwerveController().headingCalculate(current, Math.toRadians(posAng));
-        swerveDrive.drive(new Translation2d(posX, posY), angOutput, true, false);
+        double angOutput = headingController.calculate(current, Math.toRadians(posAng));
+        swerveDrive.setFieldRelativeChassisSpeeds(
+            new ChassisSpeeds(posX, posY, angOutput));
       }).until(()-> Math.abs(MathUtil.angleModulus(getHeading().getRadians() - Math.toRadians(posAng))) < Math.toRadians(2));
     }
   //A diferernça é que o 1° usa um pid manual e o 2° o pid nativo do yagsl (se usar o 1° desativa a headingcorrection)
@@ -113,24 +125,28 @@ public class SwerveSubsystem extends SubsystemBase {
   public Command turnCommand(double speed){
    
     return run(()->{
-      swerveDrive.drive(new Translation2d(0,0), speed, true, false);
+      swerveDrive.setRobotRelativeChassisSpeeds(new ChassisSpeeds(0, 0, speed));
   });}
 
   public Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX)
   {
     return run(() -> {
       // Make the robot move
-      swerveDrive.drive(SwerveMath.scaleTranslation(new Translation2d(
-                            translationX.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
-                            translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity()), 0.8),
-                        Math.pow(angularRotationX.getAsDouble(), 3) * swerveDrive.getMaximumChassisAngularVelocity(), true,
-                        false);
+      Translation2d translation = SwerveDriveConfig.scaleTranslation(
+          new Translation2d(
+              translationX.getAsDouble() * Constants.MAX_SPEED,
+              translationY.getAsDouble() * Constants.MAX_SPEED),
+          0.8);
+      swerveDrive.setFieldRelativeChassisSpeeds(new ChassisSpeeds(
+          translation.getX(),
+          translation.getY(),
+          Math.pow(angularRotationX.getAsDouble(), 3) * 2 * Math.PI));
     });
   }
 
   public void driveFieldOriented(ChassisSpeeds velocity)
   {
-    swerveDrive.driveFieldOriented(velocity);
+    swerveDrive.setFieldRelativeChassisSpeeds(velocity);
   }
 
   public SwerveDrive getSwerveDrive() {
@@ -141,7 +157,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public SwerveDriveKinematics getKinematics()
 {
-  return swerveDrive.kinematics;
+  return swerveDrive.getKinematics();
 }
 
 public void resetOdometry(Pose2d initialHolonomicPose)
@@ -154,19 +170,13 @@ public Pose2d getPose()
   return swerveDrive.getPose();
 }
 
-public void postTrajectory(Trajectory trajectory)
-{
-  swerveDrive.postTrajectory(trajectory);
-}
-
 public void resetGyro()
 {
   swerveDrive.zeroGyro();
 }
 
 public void setMotorBrake(boolean brake){
-
-  swerveDrive.setMotorIdleMode(brake);
+  throw new UnsupportedOperationException("YAGSL 2026.8.18 configures idle mode per motor in the module configuration.");
 }
 
 public Rotation2d getHeading()
@@ -176,46 +186,46 @@ public Rotation2d getHeading()
 
 public ChassisSpeeds getTargetSpeeds(double xInput, double yInput, double headingX, double headingY)
 {
-  Translation2d scaledInputs = SwerveMath.cubeTranslation(new Translation2d(xInput, yInput));
-  return swerveDrive.swerveController.getTargetSpeeds(
-      scaledInputs.getX(),
-      scaledInputs.getY(),
-      headingX,
-      headingY,
-      getHeading().getRadians(),
-      Constants.MAX_SPEED);
+  Translation2d scaledInputs = SwerveDriveConfig.cubeTranslation(new Translation2d(xInput, yInput));
+  double targetHeading = Math.atan2(headingY, headingX);
+  double angularVelocity = Math.hypot(headingX, headingY) < 1e-6
+      ? 0
+      : headingController.calculate(getHeading().getRadians(), targetHeading);
+  return ChassisSpeeds.fromFieldRelativeSpeeds(
+      scaledInputs.getX() * Constants.MAX_SPEED,
+      scaledInputs.getY() * Constants.MAX_SPEED,
+      angularVelocity,
+      getHeading());
 }
 
 public ChassisSpeeds getTargetSpeeds(double xInput, double yInput, Rotation2d angle)
 {
-  Translation2d scaledInputs = SwerveMath.cubeTranslation(new Translation2d(xInput, yInput));
-
-  return swerveDrive.swerveController.getTargetSpeeds(
-      scaledInputs.getX(),
-      scaledInputs.getY(),
-      angle.getRadians(),
-      getHeading().getRadians(),
-      Constants.MAX_SPEED);
+  Translation2d scaledInputs = SwerveDriveConfig.cubeTranslation(new Translation2d(xInput, yInput));
+  return ChassisSpeeds.fromFieldRelativeSpeeds(
+      scaledInputs.getX() * Constants.MAX_SPEED,
+      scaledInputs.getY() * Constants.MAX_SPEED,
+      headingController.calculate(getHeading().getRadians(), angle.getRadians()),
+      getHeading());
 }
 
 public ChassisSpeeds getFieldVelocity()
 {
-  return swerveDrive.getFieldVelocity();
+  return swerveDrive.getFieldRelativeSpeed();
 }
 
 public ChassisSpeeds getRobotVelocity()
 {
-  return swerveDrive.getRobotVelocity();
+  return swerveDrive.getRobotRelativeSpeed();
 }
 
-public SwerveController getSwerveController()
+public PIDController getSwerveController()
 {
-  return swerveDrive.swerveController;
+  return headingController;
 }
 
-public SwerveDriveConfiguration getSwerveDriveConfiguration()
+public SwerveDriveConfig getSwerveDriveConfiguration()
 {
-  return swerveDrive.swerveDriveConfiguration;
+  return swerveDrive.getConfig();
 }
 
 public Command lockSwerve(){
@@ -225,6 +235,6 @@ public Command lockSwerve(){
 
 public Rotation2d getPitch()
 {
-  return swerveDrive.getPitch();
+  throw new UnsupportedOperationException("The custom ADXRS450 gyro supplies yaw only.");
 }
 }
