@@ -20,6 +20,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
+import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -28,6 +29,7 @@ import swervelib.parser.SwerveParser;
 import yams.mechanisms.config.SwerveDriveConfig;
 import yams.mechanisms.swerve.SwerveDrive;
 import yams.mechanisms.swerve.SwerveModule;
+import yams.mechanisms.swerve.utility.SwerveInputStream;
 import yams.motorcontrollers.SmartMotorControllerConfig.TelemetryVerbosity;
 
 public class SwerveSubsystem extends SubsystemBase {
@@ -54,6 +56,7 @@ public class SwerveSubsystem extends SubsystemBase {
       .withStartingPose(startingPose)
       .withGyro(() -> gyro.getRotation2d().getMeasure())
       .withMaximumChassisSpeed(MetersPerSecond.of(Constants.MAX_SPEED), RadiansPerSecond.of(2 * Math.PI))
+      .withRotationController(headingController)
       .withTelemetry(TelemetryVerbosity.HIGH);
       headingController.enableContinuousInput(-Math.PI, Math.PI);
 
@@ -142,6 +145,25 @@ public class SwerveSubsystem extends SubsystemBase {
           translation.getY(),
           Math.pow(angularRotationX.getAsDouble(), 3) * 2 * Math.PI));
     });
+  }
+
+  public Command newDrive(PS4Controller controller)
+  {
+    SwerveInputStream driveInput = SwerveInputStream.of(
+        swerveDrive,
+        () -> -controller.getLeftY(),
+        () -> -controller.getLeftX())
+        .withAllianceRelativeControl()
+        .withControllerRotationAxis(controller::getRightX)
+        .withDeadband(Constants.OperatorConstants.DEADBAND)
+        .withScaleTranslation(0.8)
+        .withScaleRotation(0.6)
+        .withCubeTranslationControllerAxis();
+
+    SwerveInputStream headingInput = driveInput.clone()
+        .withControllerHeadingAxis(controller::getRightX, controller::getRightY)
+        .withHeadingControl(controller::getR3Button);
+    return swerveDrive.drive(headingInput);
   }
 
   public void driveFieldOriented(ChassisSpeeds velocity)

@@ -5,8 +5,6 @@
 package frc.robot;
 
 import java.io.File;
-import java.util.function.DoubleSupplier;
-
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -26,11 +24,7 @@ public class RobotContainer {
   
   }
   private void configureBindings() {
-    DoubleSupplier leftX = controle::getLeftX;
-    DoubleSupplier leftY = controle::getLeftY;
-    DoubleSupplier heading = controle::getRightX;
-
-    drivebase.setDefaultCommand(drivebase.driveCommand(leftY, leftX, heading));
+    drivebase.setDefaultCommand(drivebase.newDrive(controle));
       // trava o swerve
       new JoystickButton(controle, PS4Controller.Button.kSquare.value).whileTrue(drivebase.lockSwerve());
 
