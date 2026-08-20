@@ -9,8 +9,14 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.DoubleSupplier;
+
+import org.json.simple.parser.ParseException;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.RobotConfig;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
@@ -20,6 +26,7 @@ import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -73,6 +80,22 @@ public class SwerveSubsystem extends SubsystemBase {
         SmartDashboard.setDefaultNumber("AutoMove/goToX", 0);
         SmartDashboard.setDefaultNumber("AutoMove/goToY", 0);
         SmartDashboard.setDefaultNumber("AutoMove/goToAng", 0);
+
+        try {
+          AutoBuilder.configure(
+            this::getPose, 
+            this::resetOdometry, 
+            this::getRobotVelocity, 
+            (speeds) -> swerveDrive.drive(()-> speeds), 
+            null, 
+            RobotConfig.fromGUISettings(), 
+            () -> DriverStation.getAlliance()
+                .map(alliance -> alliance == DriverStation.Alliance.Red)
+                .orElse(false), this);
+
+        } catch (IOException | ParseException e) {
+          e.printStackTrace();
+        }
       }
 
   @Override
@@ -131,7 +154,7 @@ public class SwerveSubsystem extends SubsystemBase {
       swerveDrive.setRobotRelativeChassisSpeeds(new ChassisSpeeds(0, 0, speed));
   });}
 
-  public Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX)
+  public Command oldDriveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX)
   {
     return run(() -> {
       // Make the robot move

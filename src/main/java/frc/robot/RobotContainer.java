@@ -24,6 +24,8 @@ public class RobotContainer {
   
   }
   private void configureBindings() {
+
+    //driva
     drivebase.setDefaultCommand(drivebase.newDrive(controle));
       // trava o swerve
       new JoystickButton(controle, PS4Controller.Button.kSquare.value).whileTrue(drivebase.lockSwerve());
