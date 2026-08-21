@@ -5,12 +5,17 @@
 package frc.robot;
 
 import java.io.File;
+
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.commands.PathPlannerAuto;
+
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 import frc.robot.subsystems.SwerveSubsystem;
+import yams.mechanisms.swerve.SwerveDrive;
 
 public class RobotContainer {
  
@@ -36,15 +41,12 @@ public class RobotContainer {
       //deixa todos modulos em 0 graus
       new JoystickButton(controle, PS4Controller.Button.kOptions.value).whileTrue(drivebase.centerModulesCommand());
   
-      //gira a x metros por segundo
-      new JoystickButton(controle, PS4Controller.Button.kCircle.value).whileTrue(drivebase.turnCommand(2));
-
-      // vai ate uma posição
+      // Setta speeds pra direcao e turn
       new JoystickButton(controle, PS4Controller.Button.kL2.value).whileTrue(drivebase.goAndTurn());
   }
 
   public Command getAutonomousCommand() {
     // An example command will be run in autonomous
-    return null;
+    return drivebase.getAutoCommand();
   }
 }

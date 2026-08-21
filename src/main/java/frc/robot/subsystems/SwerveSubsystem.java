@@ -16,7 +16,11 @@ import java.util.function.DoubleSupplier;
 import org.json.simple.parser.ParseException;
 
 import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.commands.PathPlannerAuto;
+import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.path.PathPlannerPath;
 
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
@@ -28,8 +32,10 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PS4Controller;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 import swervelib.parser.SwerveParser;
@@ -45,6 +51,7 @@ public class SwerveSubsystem extends SubsystemBase {
     private final SwerveDrive swerveDrive;
     private final ADXRS450_Gyro gyro = new ADXRS450_Gyro();
     private final PIDController headingController = new PIDController(0.5, 0, 0);
+    private final SendableChooser<Command> autoChooser; 
     private double posX;
     private double posY;
     private double posAng;
@@ -87,15 +94,21 @@ public class SwerveSubsystem extends SubsystemBase {
             this::resetOdometry, 
             this::getRobotVelocity, 
             (speeds) -> swerveDrive.drive(()-> speeds), 
-            null, 
+            new PPHolonomicDriveController(
+              new PIDConstants(0.5, 0, 0.3), 
+              new PIDConstants(0.5, 0, 0.3)), 
             RobotConfig.fromGUISettings(), 
-            () -> DriverStation.getAlliance()
+            () -> 
+            DriverStation.getAlliance()
                 .map(alliance -> alliance == DriverStation.Alliance.Red)
                 .orElse(false), this);
 
         } catch (IOException | ParseException e) {
           e.printStackTrace();
         }
+
+      autoChooser = AutoBuilder.buildAutoChooser();
+      SmartDashboard.putData("Chosen Auto", autoChooser);
       }
 
   @Override
@@ -123,18 +136,6 @@ public class SwerveSubsystem extends SubsystemBase {
                 0, Rotation2d.kZero))
             .toArray(edu.wpi.first.math.kinematics.SwerveModuleState[]::new)));
   }
-//Comando comentado por motivos de teste
-//  public Command goAndTurn(double x, double y, double angle)
-  //{
-    //resetGyro();
-    //return run(()->{
-      //headingController.enableContinuousInput(-180, 180);
-      //double current = getHeading().getDegrees();
-      //double output = headingController.calculate(current, angle);
-      //swerveDrive.drive(new Translation2d(x,y), output, true, false);
-    //}
-    //).until(()-> Math.abs(headingController.getError()) < 2);
-  //}
 
   //Confio mais nesse gosto mais
     public Command goAndTurn(){
@@ -147,12 +148,6 @@ public class SwerveSubsystem extends SubsystemBase {
       }).until(()-> Math.abs(MathUtil.angleModulus(getHeading().getRadians() - Math.toRadians(posAng))) < Math.toRadians(2));
     }
   //A diferernça é que o 1° usa um pid manual e o 2° o pid nativo do yagsl (se usar o 1° desativa a headingcorrection)
-  //funciona
-  public Command turnCommand(double speed){
-   
-    return run(()->{
-      swerveDrive.setRobotRelativeChassisSpeeds(new ChassisSpeeds(0, 0, speed));
-  });}
 
   public Command oldDriveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX)
   {
@@ -253,6 +248,18 @@ public ChassisSpeeds getTargetSpeeds(double xInput, double yInput, Rotation2d an
       getHeading());
 }
 
+public Command getAutoCommand(){
+  try{
+  PathPlannerPath path = PathPlannerPath.fromPathFile("Example Path");
+  
+    return AutoBuilder.followPath(path);
+
+  } catch(Exception e){
+    DriverStation.reportError("Nao tem o auto ou sla", false);
+    return Commands.none();
+  }
+  }
+  
 public ChassisSpeeds getFieldVelocity()
 {
   return swerveDrive.getFieldRelativeSpeed();
